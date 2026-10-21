@@ -1,0 +1,39 @@
+name: Nightly database backup
+
+# Stopgap for the Supabase FREE plan, which takes no automatic backups.
+# Dumps schema + data to an artifact kept for 30 days. Also touches the database
+# daily, which helps stop the free plan pausing the project after a week idle.
+# Not a replacement for the Pro plan once real students sign up.
+# Storage files (credentials, course assets) are NOT in a database dump.
+
+on:
+  schedule:
+    - cron: "30 2 * * *"   # 02:30 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # SUPABASE_DB_URL must be the *Session pooler* connection string (it works over IPv4,
+      # which GitHub runners need). Add it in: repo > Settings > Secrets and variables > Actions.
+      - name: Dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_DB_URL" || { echo "SUPABASE_DB_URL secret is not set"; exit 1; }
+          stamp=$(date -u +%Y%m%d-%H%M)
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "nexa-schema-$stamp.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f "nexa-data-$stamp.sql"
+          test -s "nexa-schema-$stamp.sql" && test -s "nexa-data-$stamp.sql"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexa-db-backup
+          path: nexa-*.sql
+          retention-days: 30
