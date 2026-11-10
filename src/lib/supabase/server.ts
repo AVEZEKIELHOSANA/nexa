@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
 
 /** Supabase client for Server Components, Server Actions and Route Handlers. */
+console.log("USING SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 export async function createClient() {
   const cookieStore = await cookies();
   return createServerClient<Database>(

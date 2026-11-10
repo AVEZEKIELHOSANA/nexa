@@ -1,22 +1,41 @@
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
+import { LandingNavbar } from "@/components/landing/navbar";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { FeaturedCareers } from "@/components/landing/featured-careers";
+import { FeaturedPros } from "@/components/landing/featured-pros";
+import { Testimonials } from "@/components/landing/testimonials";
+import { About } from "@/components/landing/about";
+import { CTA } from "@/components/landing/cta";
+import { Footer } from "@/components/landing/footer";
 
-// Placeholder home page. The real landing page (hero, how it works, careers strip) is built on Day 3.
-export default function Home() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  
+  // Fetch top 3 verified professionals from the DATABASE
+  const { data: professionals, error } = await supabase
+    .from("public_professionals")
+    .select("id, name, career_name, bio")
+    .limit(3);
+
+  if (error) {
+    console.error("Error fetching professionals:", error);
+  }
+
   return (
-    <section className="mx-auto max-w-2xl space-y-6 py-16 text-center">
-      <h1 className="text-4xl font-bold tracking-tight">Nexa</h1>
-      <p className="text-lg text-muted-foreground">
-        Book one-to-one sessions with experienced professionals and learn what it takes to follow the career you want.
-      </p>
-      <div className="flex justify-center gap-3">
-        <Link href="/signup" className={buttonVariants({ size: "lg" })}>
-          Get started
-        </Link>
-        <Link href="/login" className={buttonVariants({ variant: "outline", size: "lg" })}>
-          Log in
-        </Link>
-      </div>
-    </section>
+    <div className="min-h-screen bg-[#F9F9F6]">
+      <LandingNavbar />
+      <main>
+        <Hero />
+        <About />
+        <HowItWorks />
+        <FeaturedCareers />
+        {/* Pass the database data */}
+        <FeaturedPros professionals={professionals || []} />
+        <Testimonials />
+        <CTA />
+      </main>
+      <Footer />
+    </div>
   );
 }
